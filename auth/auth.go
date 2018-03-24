@@ -8,12 +8,6 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
-// JwtUser contains token claims map values
-type JwtUser struct {
-	Name string
-	ID   int64
-}
-
 // New  creates a new auth token
 func New(claims jwt.Claims) (string, error) {
 	secret := os.Getenv("JWT_TOKEN_SECRET")

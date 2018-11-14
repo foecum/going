@@ -17,6 +17,9 @@ type Server struct {
 
 // New creates a new http server
 func New(host string, port string) *Server {
+	log.SetOutput(os.Stdout)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
 	return &Server{
 		instance: &http.Server{
 			Addr: fmt.Sprintf("%s:%s", host, port),
@@ -27,7 +30,15 @@ func New(host string, port string) *Server {
 
 // RegisterHandler registers new handlers
 func (s *Server) RegisterHandler(path string, handler http.HandlerFunc) {
-	s.mux.Handle(path, handler)
+	s.mux.Handle(path, logRequest(handler))
+}
+
+// Simgle request logging
+func logRequest(handler http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+	})
 }
 
 // StartServer ...

@@ -56,14 +56,14 @@ func (s *Server) StartServer() {
 
 		if err := s.instance.Shutdown(context.Background()); err != nil {
 			log.Printf("Unable to shut down server: %v", err)
-		} else {
-			log.Println("Server stopped")
+			return
 		}
+		log.Println("Server stopped")
 	}()
 
 	if err := s.instance.ListenAndServe(); err != http.ErrServerClosed {
 		log.Printf("%v", err)
-	} else {
-		log.Println("Server closed!")
+		return
 	}
+	log.Println("Server closed!")
 }

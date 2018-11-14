@@ -7,12 +7,19 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+
+	"github.com/gorilla/mux"
 )
+
+// Routes...
+type Routes interface {
+	RegisterRoutes(srv *Server)
+}
 
 // Server ...
 type Server struct {
 	instance *http.Server
-	mux      *http.ServeMux
+	router   *mux.Router
 }
 
 // New creates a new http server
@@ -24,13 +31,18 @@ func New(host string, port string) *Server {
 		instance: &http.Server{
 			Addr: fmt.Sprintf("%s:%s", host, port),
 		},
-		mux: http.NewServeMux(),
+		router: mux.NewRouter(),
 	}
+}
+
+// SetPathPrefix sets path prefix for different apis paths
+func (s *Server) SetPathPrefix(prefix string) *mux.Router {
+	return s.router.PathPrefix(prefix).Subrouter()
 }
 
 // RegisterHandler registers new handlers
 func (s *Server) RegisterHandler(path string, handler http.HandlerFunc) {
-	s.mux.Handle(path, logRequest(handler))
+	s.router.HandleFunc(path, logRequest(handler))
 }
 
 // Simgle request logging
@@ -41,10 +53,17 @@ func logRequest(handler http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
+// RegisterAllRoutes takes endpoints and registers them with the mux
+func (s *Server) RegisterAllRoutes(endpoints []Routes) {
+	for _, endpoint := range endpoints {
+		endpoint.RegisterRoutes(s)
+	}
+}
+
 // StartServer ...
 func (s *Server) StartServer() {
 	log.Printf("Starting server...\n")
-	http.Handle("/", s.mux)
+	http.Handle("/", s.router)
 	go func() {
 		// Graceful shutdown
 		sigquit := make(chan os.Signal, 1)
